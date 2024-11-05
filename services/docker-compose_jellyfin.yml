@@ -1,0 +1,37 @@
+networks:
+  proxy:
+    external: true
+  jellynet:
+    driver: bridge
+    external: false
+
+services:
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Toronto # Adjust to your timezone
+    group_add:
+      - "105"
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+    volumes:
+      - ./config:/config
+      - /mnt/nas/media:/media
+    ports:
+      - "8096:8096"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.example.com`)"
+      - "traefik.http.routers.jellyfin.entrypoints=web,websecure"
+      - "traefik.http.routers.jellyfin.tls=true"
+      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
+      - "traefik.http.routers.jellyfin.tls.certresolver=stepca"
+      - "traefik.http.routers.jellyfin.tls.domains[0].main=jellyfin.example.com"
+      - "traefik.port=80"
+    networks:
+      - proxy
+      - jellynet
