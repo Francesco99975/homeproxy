@@ -1,0 +1,27 @@
+[entryPoints]
+  [entryPoints.web]
+    address = ":80"
+    [entryPoints.web.http.redirections.entrypoint]
+      to = "websecure"
+      scheme = "https"
+  [entryPoints.websecure]
+    address = ":443"
+
+[providers.docker]
+  watch = true
+  network = "proxy"
+
+[certificatesResolvers]
+  [certificatesResolvers.stepca.acme]
+    caServer = "https://step-ca:9000/acme/acme/directory"
+    email = "<your-email>"
+    storage = "/letsencrypt/acme.json"
+    certificatesDuration = 24
+    [certificatesResolvers.stepca.acme.tlsChallenge]
+
+[http.middlewares.traefik-auth.basicAuth]
+  users = ["admin:<your-password-hash>"]
+
+[api]
+  dashboard = true
+  insecure = false

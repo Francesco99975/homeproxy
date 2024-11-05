@@ -1,0 +1,58 @@
+networks:
+  proxy:
+    external: true
+  internal:
+    driver: bridge
+    external: false
+
+services:
+  step-ca:
+    image: "smallstep/step-ca"
+    container_name: "step-ca"
+    restart: unless-stopped
+    environment:
+      DOCKER_STEPCA_INIT_NAME: Smallstep
+      DOCKER_STEPCA_INIT_DNS_NAMES: "localhost,$(hostname -f)"
+      DOCKER_STEPCA_INIT_PROVISIONER_NAME: admin
+      DOCKER_STEPCA_INIT_PASSWORD_FILE: /home/step/secrets/password
+    ports:
+      - 9000:9000
+    networks:
+      - "internal"
+    volumes:
+      - ./data/step-ca:/home/step
+  traefik:
+    depends_on:
+      step-ca:
+        condition: service_healthy
+    image: "traefik:latest"
+    container_name: "traefik"
+    restart: "unless-stopped"
+    environment:
+      - LEGO_CA_CERTIFICATES=/etc/ssl/certs/root_ca.crt
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - "proxy"
+      - "internal"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik.toml:/traefik.toml:ro"
+      - "./letsencrypt:/letsencrypt"
+      - "./data/step-ca/certs/root_ca.crt:/etc/ssl/certs/root_ca.crt:ro"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.example.com`)" # URL for the dashboard
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.tls.certresolver=stepca"
+      - "traefik.http.routers.traefik.middlewares=traefik-auth"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:<your-password-hash>"
+      - "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.services.api.loadbalancer.server.port=8080"
+      - "traefik.http.routers.traefik.tls.domains[0].main=traefik.example.local"
