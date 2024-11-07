@@ -34,10 +34,24 @@ project-directory/
 ### Step 1: Create Necessary Files and Folders
 
 1. Clone this repository or create a new directory.
-2. Create the following files in this directory:
-   - `docker-compose.yml`
-   - `traefik.toml`
-3. Create a `letsencrypt/acme.json` and `data/step-ca` directory to store Certs and Step CA data.
+
+```
+git clone https://github.com/Francesco99975/homeproxy
+```
+
+2. Create a `letsencrypt/acme.json` and `data/step-ca` directory to store Certs and Step CA data.
+
+```
+mkdir -p "$PWD/letsencrypt"
+
+touch acme.json
+```
+
+```
+mkdir -p "$PWD/data/step-ca"
+
+sudo chown -R 1000:1000 "$PWD/data/step-ca"
+```
 
 ### Step 2: Configure `docker-compose.yml`
 
@@ -47,7 +61,21 @@ Edit the [`docker-compose.yml`](docker-compose.yml) file to define the services 
 
 Edit the [`traefik.toml`](traefik.toml) file to set up Traefik's entry points, provider settings, certificate resolver, and enable the dashboard with authentication. You can reference the complete configuration.
 
-### Step 4: Run the Containers
+### Step 4: Initialize Step-CA
+
+```
+docker run --rm -it -v "$PWD/data/step-ca:/home/step" smallstep/step-ca step ca init
+```
+
+### Step 5: Set your password
+
+```
+echo <your password here> | sudo tee "$PWD/data/step-ca/secrets/password"
+
+sudo chown -R 1000:1000 "$PWD/data/step-ca/secrets/password"
+```
+
+### Step 6: Run the Containers
 
 Run the following command to start all the containers defined in your `docker-compose.yml` file:
 
@@ -55,9 +83,39 @@ Run the following command to start all the containers defined in your `docker-co
 docker-compose up -d
 ```
 
-### Step 5: Access the Traefik Dashboard
+> you can check if the step-ca container is running correctly by sending a request to: https://localhost:9000/health
+
+```
+curl -k https://localhost:9000/health
+```
+
+> -k is used to ignore certificate checks for now since acme is not setup and cert is not trusted by system
+
+### Step 7: Enable the ACME Provisioner
+
+```
+docker-compose exec step-ca step ca provisioner add acme --type ACME
+
+docker-compose restart
+```
+
+### Step 8: Access the Traefik Dashboard
 
 Once Traefik is up, access the dashboard at `https://traefik.example.local` (replace `example.local` with your domain). Log in with the credentials set in `traefik.toml`.
+
+### Step 9: Add Certificate to system trust store
+
+> Get fingerprint from data/step-ca/config/defaults.json
+
+```
+step ca bootstrap --ca-url https://localhost:9000 --install --fingerprint <fingerprint>
+```
+
+> Test if it worked by sending a request to https://localhost:9000 this time without ignoring certificate check
+
+```
+curl https://localhost:9000
+```
 
 ### Attaching Services to the Proxy
 
