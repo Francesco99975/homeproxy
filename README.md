@@ -44,7 +44,7 @@ git clone https://github.com/Francesco99975/homeproxy
 ```
 mkdir -p "$PWD/letsencrypt"
 
-touch acme.json
+touch "$PWD/letsencrypt/acme.json"
 ```
 
 ```
