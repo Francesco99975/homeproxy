@@ -112,7 +112,9 @@ curl -k https://localhost:9000/health
 
 ```
 docker-compose exec step-ca step ca provisioner add acme --type ACME
+```
 
+```
 docker-compose restart
 ```
 
