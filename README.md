@@ -64,6 +64,10 @@ Edit the [`traefik.toml`](traefik.toml) file to set up Traefik's entry points, p
 ### Step 4: Initialize Step-CA
 
 ```
+mkdir -p "$PWD/data/step-ca" && sudo chown -R 1000:1000 "$PWD/data/step-ca"
+```
+
+```
 docker run --rm -it -v "$PWD/data/step-ca:/home/step" smallstep/step-ca step ca init
 ```
 
