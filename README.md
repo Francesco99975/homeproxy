@@ -70,12 +70,25 @@ mkdir -p "$PWD/data/step-ca" && sudo chown -R 1000:1000 "$PWD/data/step-ca"
 ```
 docker run --rm -it -v "$PWD/data/step-ca:/home/step" smallstep/step-ca step ca init
 ```
+### Input Answers:
+### What would you like to name your new PKI?
+> name of your container
+### What DNS names or IP addresses will clients use to reach your CA?
+> step-ca,localhost
+### 
+> :(literal colon) followed by exposed port of your container
+### What would you like to name the CA's first provisioner?
+> yourname@server.com
+### Set a Password
+> choose a Password or save the generated one for the next step
 
 ### Step 5: Set your password
 
 ```
 echo <your password here> | sudo tee "$PWD/data/step-ca/secrets/password"
+```
 
+```
 sudo chown -R 1000:1000 "$PWD/data/step-ca/secrets/password"
 ```
 
